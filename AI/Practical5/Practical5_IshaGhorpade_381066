@@ -1,0 +1,92 @@
+import heapq
+
+class Node:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.g = 0  # cost from start
+        self.h = 0  # heuristic cost to goal
+        self.f = 0  # total cost
+        self.parent = None
+
+    def __lt__(self, other):
+        return self.f < other.f   # needed for heapq
+
+    def __eq__(self, other):
+        return self.x == other.x and self.y == other.y
+
+    def __hash__(self):
+        return hash((self.x, self.y))
+
+
+def heuristic(a, b):
+    """Manhattan distance heuristic"""
+    return abs(a.x - b.x) + abs(a.y - b.y)
+
+
+def find_path(start, goal, grid):
+    open_list = []
+    heapq.heappush(open_list, start)  # priority queue
+    closed_list = set()
+
+    start.g = 0
+    start.h = heuristic(start, goal)
+    start.f = start.g + start.h
+
+    while open_list:
+        current = heapq.heappop(open_list)
+
+        if current.x == goal.x and current.y == goal.y:
+            path = []
+            while current:
+                path.append(current)
+                current = current.parent
+            return path[::-1]  # reverse path
+
+        closed_list.add((current.x, current.y))
+
+        # Explore neighbors (up, down, left, right)
+        for dx, dy in [(1,0), (-1,0), (0,1), (0,-1)]:
+            nx, ny = current.x + dx, current.y + dy
+
+            if 0 <= nx < len(grid) and 0 <= ny < len(grid[0]):
+                if grid[nx][ny] == 1:
+                    continue
+
+                neighbor = Node(nx, ny)
+
+                if (nx, ny) in closed_list:
+                    continue
+
+                tentative_g = current.g + 1
+
+                if neighbor not in open_list or tentative_g < neighbor.g:
+                    neighbor.g = tentative_g
+                    neighbor.h = heuristic(neighbor, goal)
+                    neighbor.f = neighbor.g + neighbor.h
+                    neighbor.parent = current
+
+                    if neighbor not in open_list:
+                        heapq.heappush(open_list, neighbor)
+
+    return None  # no path found
+
+
+if __name__ == "__main__":
+    grid = [
+        [0, 0, 0, 0],
+        [1, 1, 0, 1],
+        [0, 0, 0, 0],
+        [0, 1, 1, 0]
+    ]
+
+    start = Node(0, 0)
+    goal = Node(3, 3)
+
+    path = find_path(start, goal, grid)
+    if path:
+        print("Path found:")
+        for n in path:
+            print(f"({n.x},{n.y})")
+    else:
+        print("No path found")
