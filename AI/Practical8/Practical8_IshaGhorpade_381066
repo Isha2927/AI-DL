@@ -1,0 +1,93 @@
+class Rule:
+    def __init__(self, conditions, result):
+        self.conditions = conditions  # IF part
+        self.result = result          # THEN part
+
+
+def build_index(rules):
+    """Build index: result -> list of rules producing it"""
+    index = {}
+    for r in rules:
+        index.setdefault(r.result, []).append(r)
+    return index
+
+
+def backward_prove(goal, known_facts, rules_by_result, proved_set, in_progress, steps):
+    # 1) If already known
+    if goal in known_facts:
+        steps.append(f"KNOWN FACT: {goal}")
+        proved_set.add(goal)
+        return True
+
+    # 2) If proved earlier
+    if goal in proved_set:
+        steps.append(f"ALREADY PROVED: {goal}")
+        return True
+
+    # 3) Cycle detection
+    if goal in in_progress:
+        steps.append(f"CYCLE DETECTED: {goal}")
+        return False
+
+    # 4) If no rules produce this goal
+    if goal not in rules_by_result:
+        steps.append(f"NO RULES PRODUCE: {goal}")
+        return False
+
+    in_progress.add(goal)
+    steps.append(f"TRY PROVING: {goal}")
+
+    for rule in rules_by_result[goal]:
+        conds_str = " ∧ ".join(rule.conditions)
+        steps.append(f" Try rule: {conds_str} ⇒ {rule.result}")
+
+        all_ok = True
+        for cond in rule.conditions:
+            if not backward_prove(cond, known_facts, rules_by_result, proved_set, in_progress, steps):
+                steps.append(f" -> condition FAILED: {cond}")
+                all_ok = False
+                break
+            else:
+                steps.append(f" -> condition PROVED: {cond}")
+
+        if all_ok:
+            known_facts.add(goal)
+            proved_set.add(goal)
+            steps.append(f"RULE SUCCEEDED -> proved: {goal}")
+            in_progress.remove(goal)
+            return True
+        else:
+            steps.append(f"Rule failed for: {goal}")
+
+    in_progress.remove(goal)
+    steps.append(f"ALL RULES FAILED for: {goal}")
+    return False
+
+
+if __name__ == "__main__":
+    # Example Rules:
+    # 1. Fever ∧ Cough ⇒ ViralInfection
+    # 2. ViralInfection ∧ BodyAche ⇒ FluSymptoms
+    # 3. FluSymptoms ⇒ Flu
+    rules = [
+        Rule(["Fever", "Cough"], "ViralInfection"),
+        Rule(["ViralInfection", "BodyAche"], "FluSymptoms"),
+        Rule(["FluSymptoms"], "Flu"),
+    ]
+
+    known_facts = {"Fever", "Cough", "BodyAche"}
+    rules_by_result = build_index(rules)
+
+    goal = "Flu"
+    steps = []
+    proved_set = set()
+    in_progress = set()
+
+    result = backward_prove(goal, known_facts, rules_by_result, proved_set, in_progress, steps)
+
+    print("Backward Chaining Trace:")
+    for line in steps:
+        print(line)
+
+    print("\nResult:", "PROVED" if result else "NOT PROVED", "for goal:", goal)
+    print("Final facts:", " ".join(known_facts))
