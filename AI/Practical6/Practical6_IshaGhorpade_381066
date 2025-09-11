@@ -1,0 +1,59 @@
+N = 8
+
+def print_board(board):
+    for i in range(N):
+        for j in range(N):
+            print("Q " if board[i][j] == 1 else ". ", end="")
+        print()
+    print()
+
+
+def is_safe(board, row, col):
+    # Check left side of row
+    for i in range(col):
+        if board[row][i] == 1:
+            return False
+
+    # Check upper diagonal (left)
+    i, j = row, col
+    while i >= 0 and j >= 0:
+        if board[i][j] == 1:
+            return False
+        i -= 1
+        j -= 1
+
+    # Check lower diagonal (left)
+    i, j = row, col
+    while i < N and j >= 0:
+        if board[i][j] == 1:
+            return False
+        i += 1
+        j -= 1
+
+    return True
+
+
+def solve_nq_util(board, col):
+    if col >= N:
+        print_board(board)  # Print one solution
+        return True         # Change this if you want only one solution
+
+    res = False
+    for i in range(N):
+        if is_safe(board, i, col):
+            board[i][col] = 1  # Place queen
+            res = solve_nq_util(board, col + 1) or res
+            board[i][col] = 0  # Backtrack
+    return res
+
+
+def solve_nq():
+    board = [[0] * N for _ in range(N)]
+
+    if not solve_nq_util(board, 0):
+        print("No solution exists")
+
+
+if __name__ == "__main__":
+    print("8-Queens Problem Solutions:")
+    solve_nq()
