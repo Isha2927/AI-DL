@@ -1,0 +1,57 @@
+class Rule:
+    def __init__(self, conditions, result):
+        self.conditions = conditions  # IF part
+        self.result = result          # THEN part
+        self.used = False             # prevent reusing once fired
+
+
+def can_fire(rule, facts):
+    """Check if all conditions of a rule are in the current facts"""
+    return all(cond in facts for cond in rule.conditions)
+
+
+def forward_chaining(rules, facts, goal):
+    derived = False
+
+    print("Initial facts:", " ".join(facts), "\n")
+
+    added_new = True
+    while added_new and not derived:
+        added_new = False
+        for rule in rules:
+            if not rule.used and can_fire(rule, facts):
+                print("Rule fired:", " ".join(rule.conditions), "=>", rule.result)
+
+                facts.append(rule.result)
+                rule.used = True
+                added_new = True
+
+                if rule.result == goal:
+                    derived = True
+                    break
+
+    print("\nFinal facts:", " ".join(facts))
+
+    if derived:
+        print("SUCCESS: Goal", goal, "is achieved!")
+    else:
+        print("FAIL: Goal", goal, "cannot be achieved.")
+
+
+if __name__ == "__main__":
+    # Example Rules:
+    # 1. P ∧ Q ⇒ R
+    # 2. R ∧ S ⇒ T
+    # 3. T ⇒ U
+    rules = [
+        Rule(["P", "Q"], "R"),
+        Rule(["R", "S"], "T"),
+        Rule(["T"], "U")
+    ]
+
+    # Initial facts
+    facts = ["P", "Q", "S"]
+
+    goal = "U"  # final thing we want
+
+    forward_chaining(rules, facts, goal)
